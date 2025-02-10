@@ -1,12 +1,26 @@
 # 12-05
 12-05 «Индексы» Васяева Ирина
 # Задание 1
-Чтобы узнать размер базы данных в PostgreSQL, можно использовать функцию pg_database_size, которая возвращает размер указанной базы данных. Для получения размерного пространства диска, которое используется для всех баз данных на сервере, можно использовать pg_size_pretty вместе с запросом к pg_database.  
-Вот более простой запрос для получения этих значений:
-```sql
+Есть два варианта для решения данной задачи, где мы выясняем общий размер базы данных, размер, занимаемый индексами, и получаем процентное отношение общего размера всех индексов к общему размеру всех таблиц в учебной базе данных:
+- Получаем общий размер базы данных
+```
+SELECT pg_size_pretty(pg_database_size(current_database())) AS total_database_size;
+```
+- Получаем размер, занимаемый индексами
+```
+SELECT pg_size_pretty(SUM(pg_total_relation_size(indexname))) AS total_index_size
+FROM pg_indexes;
+```
+- Получаем процентное отношение общего размера всех индексов к общему размеру всех таблиц в учебной базе данных:
+```
 SELECT 
-    pg_size_pretty(pg_database_size(current_database())) AS database_size,
-    pg_size_pretty(pg_tablespace_size(pg_tablespace_get_name(0))) AS tablespace_size
+    (SUM(pg_total_relation_size(indexname))::decimal / NULLIF(SUM(pg_total_relation_size(table_name)), 0)) * 100 AS index_to_table_size_percentage
+FROM 
+    pg_indexes
+JOIN 
+    information_schema.tables ON tables.table_name = pg_indexes.tablename
+WHERE 
+    tables.table_schema = 'public';
 ```
 ### Пояснение переменных и элементов запроса:
 1. **pg_database_size(current_database())**: Эта функция вычисляет размер текущей базы данных, включая все таблицы, индексы и другие объекты, которые в ней существуют. Использование current_database() позволяет получить размер именно той базы данных, в которой выполняется запрос.
