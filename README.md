@@ -1,20 +1,13 @@
 # 12-05
 12-05 «Индексы» Васяева Ирина
 # Задание 1
-Есть два варианта для решения данной задачи, где мы выясняем общий размер базы данных, размер, занимаемый индексами, и получаем процентное отношение общего размера всех индексов к общему размеру всех таблиц в учебной базе данных:
+Есть вариант для решения данной задачи, где мы выясняем общий размер базы данных, размер, занимаемый индексами, и получаем процентное отношение общего размера всех индексов к общему размеру всех таблиц в учебной базе данных:
 - Получаем общий размер базы данных
 ```
-SELECT pg_size_pretty(pg_database_size(current_database())) AS total_database_size;
-```
-- Получаем размер, занимаемый индексами
-```
-SELECT pg_size_pretty(SUM(pg_total_relation_size(indexname))) AS total_index_size
-FROM pg_indexes;
-```
-- Получаем процентное отношение общего размера всех индексов к общему размеру всех таблиц в учебной базе данных:
-```
 SELECT 
-    (SUM(pg_total_relation_size(indexname))::decimal / NULLIF(SUM(pg_total_relation_size(table_name)), 0)) * 100 AS index_to_table_size_percentage
+    pg_size_pretty(pg_database_size(current_database())) AS total_database_size,
+    pg_size_pretty(SUM(pg_total_relation_size(indexname))) AS total_index_size,
+    COALESCE((SUM(pg_total_relation_size(indexname))::decimal / NULLIF(SUM(pg_total_relation_size(table_name)), 0)) * 100, 0) AS index_to_table_size_percentage
 FROM 
     pg_indexes
 JOIN 
@@ -22,6 +15,10 @@ JOIN
 WHERE 
     tables.table_schema = 'public';
 ```
+В этом запросе:
+1. Мы сначала получаем общий размер базы данных.
+2. Затем вычисляем общий размер индексов.
+3. Наконец, рассчитываем процентное отношение размера индексов к общему размеру таблиц.
 # Задание 2
 ### 1: Выполнение `EXPLAIN ANALYZE`
 ```sql
